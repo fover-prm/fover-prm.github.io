@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Evaluating the capability of LVLMs to perceive geometric infomration, such as angle, shape, and size.">
+  <meta name="keywords" content="VisOnlyQA">
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+  <meta name="viewport" content="width=1024">
+  <title>VisOnlyQA: Large Vision Language Models Still Struggle with Visual Perception of Geometric Information</title>
+
+  <meta name="google-site-verification" content="-RYNyO_vx61bqyzPwVV51TP9OcnAFzwGG6DHF2ktLTY" />
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0S3QZGZK9M"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-0S3QZGZK9M');
+</script>
+<!-- End Google tag (gtag.js) -->
+
+  <link rel="icon" href="./static/images/visonlyqa_icon.png">
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="stylesheet" href="./static/css/leaderboard.css">
+
+  <!-- <link href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bulma.min.css" rel="stylesheet">
+  <script type="text/javascript" src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script> -->
+  <script type="text/javascript" src="static/js/sort-table.js" defer></script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/explorer-index.js"></script>
+  <script src="./static/js/question_card.js"></script>
+
+  <script src="./static/js/leaderboard_testmini.js"></script>  
+  <script src="./data/results/output_folders.js" defer></script>
+  <script src="./data/results/model_scores.js" defer></script>
+
+  <script src="./visualizer/data/data_public.js" defer></script>
+</head>
+<body>
+
+<!-- <nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;"> -->
+      <!-- <a class="navbar-item" href="https://keunhong.com">
+      <span class="icon">
+          <i class="fas fa-home"></i>
+      </span>
+      </a> -->
+      <!-- @PAN TODO: consider adding links? -->
+      <!-- <div class="navbar-item has-dropdown is-hoverable">
+        <a class="navbar-link">
+          More Research
+        </a>
+        <div class="navbar-dropdown">
+          <a class="navbar-item" href="https://chameleon-llm.github.io/">
+            <b>Chameleon</b> <p style="font-size:18px; display: inline; margin-left: 5px;">🔥</p>
+          </a>
+          <a class="navbar-item" href="https://scienceqa.github.io/">
+            <b>ScienceQA</b> <p style="font-size:18px; display: inline; margin-left: 5px;">🔥</p>
+          </a>
+          <a class="navbar-item" href="https://github.com/OpenGVLab/LLaMA-Adapter">
+            <b>LLaMA-Adapter (V2)</b> <p style="font-size:18px; display: inline; margin-left: 5px;">🔥</p>
+          </a>
+          <a class="navbar-item" href="https://promptpg.github.io/">
+            PromptPG
+          </a>
+          <a class="navbar-item" href="https://arxiv.org/abs/2307.10635">
+            SciBench
+          </a>
+          <a class="navbar-item" href="https://arxiv.org/abs/2305.12524">
+            TheoremQA
+          </a>
+          <a class="navbar-item" href="https://lila.apps.allenai.org/">
+            Lila
+          </a>
+          <a class="navbar-item" href="https://iconqa.github.io/">
+            IconQA
+          </a>
+          <a class="navbar-item" href="https://lupantech.github.io/inter-gps/">
+            Inter-GPS
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</nav> -->
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title is-bold">
+            <span class="visonlyqa" style="vertical-align: middle">
+              <img src="static/images/visonlyqa_icon.png" style="width:1.15em;vertical-align: text-top" alt="Logo"/>
+              VisOnlyQA
+            </span>
+            </h1>
+          <h2 class="subtitle is-3 publication-subtitle">
+            Large Vision Language Models Still Struggle with Visual Perception of Geometric Information
+            <!-- <br> -->
+            <!-- with GPT-4V, Bard, and Other Large Multimodal Models -->
+          </h2>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://ryokamoi.github.io/">Ryo Kamoi</a>,
+            </span>
+            <span class="author-block">
+              <a href="https://yuszh.com/">Yusen Zhang</a>,
+            </span>
+            <span class="author-block">
+              <a href="https://sarathismg.github.io/">Sarkar Snigdha Sarathi Das</a>,
+            </span>
+            </span>
+            <span class="author-block">
+              <a href="https://windchimeran.github.io/">Ranran Haoran Zhang</a>,</span>
+            </span>
+            <span class="author-block">
+              <a href="https://ryanzhumich.github.io/">Rui Zhang</a></span>
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">Penn State University</span><br>
+          </div>
+        
+          <!-- <section> -->
+            <!-- <div class="section" id="org-banners" style="display:fle">
+              <a href="https://www.ucla.edu/" target="_blank" rel="external">
+                  <img class="center-block org-banner" src="static/images/ucla.png" style="height:3em">
+              </a>
+              <a href="https://www.washington.edu/" target="blank" class="ext-link">
+                  <img class="center-block org-banner" src="static/images/uw.png" style="height:3em">
+              </a>
+              <a href="https://www.microsoft.com/en-us/research/" target="_blank" rel="external">
+                  <img class="center-block org-banner" src="static/images/microsoft.png" style="height:3em">
+              </a>
+            </div> -->
+          <!-- </section> -->
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <!-- <span class="link-block"> -->
+                <!-- @PAN TODO: change links -->
+                <!-- <a href="https://arxiv.org/pdf/2310.02255.pdf"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span> -->
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2412.00947"
+                   class="external-link button is-normal is-rounded is-dark">
+                <!-- <a href="https://lupantech.github.io/papers/arxiv23_visonlyqa.pdf"
+                   class="external-link button is-normal is-rounded is-dark"> -->
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Video Link. -->
+              <!-- <span class="link-block">
+                <a href="https://www.youtube.com/watch?v=MrKrnHhk8IA"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-youtube"></i>
+                  </span>
+                  <span>Video</span>
+                </a>
+              </span> -->
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/psunlpgroup/VisOnlyQA"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+              <!-- Dataset Link. -->
+              <span class="link-block">
+                <a href="https://huggingface.co/collections/ryokamoi/visonlyqa-674e86c7ec384b629bb97bc3"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <!-- <i class="far fa-images"></i> -->
+                      <p style="font-size:18px">🤗</p>
+                      <!-- 🔗 -->
+                  </span>
+                  <span>Dataset</span>
+                </a>
+              </span>
+              <!-- Visualization Link. -->
+              <!-- <span class="link-block">
+                <a href="https://visonlyqa.github.io/#visualization"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <p style="font-size:18px">🔮</p>
+                  </span>
+                  <span>Visualize</span>
+                </a>
+              </span> -->
+              <!-- Leaderboard Link. -->
+              <!-- <span class="link-block">
+                <a href="https://visonlyqa.github.io/#leaderboard"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <p style="font-size:18px">🏆</p>
+                  </span>
+                  <span>Leaderboard</span>
+                </a>
+              </span> -->
+              <!-- Twitter Link. -->
+              <!-- <span class="link-block">
+                <a href="https://twitter.com/lupantech/status/1717313355780964608"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"> -->
+                      <!-- <i class="far fa-images"></i> -->
+                      <!-- 💻🔗 -->
+                      <!-- <p style="font-size:18px">🌐</p>
+                  </span>
+                  <span>Twitter</span>
+                </a>
+              </span> -->
+              <!-- Example Button -->
+              <span class="link-block">
+                <a href="#example-responses-on-visonlyqa" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <p style="font-size:18px">🔍</p>
+                  </span>
+                  <span>Examples</span>
+                </a>
+              </span>
+              <!-- BibTex Button -->
+              <span class="link-block">
+                <button class="button is-normal is-rounded is-dark" onclick="document.getElementById('bibtex-modal').classList.add('is-active')">
+                  <span class="icon">
+                    <p style="font-size:18px">📄</p>
+                  </span>
+                  <span>BibTex</span>
+                </button>
+              </span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- BibTex Modal -->
+<div class="modal" id="bibtex-modal">
+  <div class="modal-background" onclick="document.getElementById('bibtex-modal').classList.remove('is-active')"></div>
+  <div class="modal-card">
+    <header class="modal-card-head">
+      <p class="modal-card-title">BibTeX</p>
+      <button class="delete" aria-label="close" onclick="document.getElementById('bibtex-modal').classList.remove('is-active')"></button>
+    </header>
+    <section class="modal-card-body">
+      <pre id="bibtex-entry" style="white-space: pre-wrap; font-size: 0.9rem; background: #f7f7f7; padding: 1rem; border-radius: 5px;">@article{kamoi2024visonlyqa,
+  author = {Ryo Kamoi and Yusen Zhang and Sarkar Snigdha Sarathi Das and Ranran Haoran Zhang and Rui Zhang},
+  journal = {arXiv preprint arXiv:2412.00947},
+  title = {VisOnlyQA: Large Vision Language Models Still Struggle with Visual Perception of Geometric Information},
+  year = {2024}
+}</pre>
+      <button class="button is-small is-link mt-3" onclick="copyBibtex()">Copy</button>
+    </section>
+  </div>
+</div>
+
+<script>
+  function copyBibtex() {
+    const bibtex = document.getElementById("bibtex-entry").innerText;
+    navigator.clipboard.writeText(bibtex);
+  }
+</script>
+
+<!-- <section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="content has-text-centered">
+      <img src="static/images/tease_scores_gpt4v.png" alt="geometric reasoning" width="99%"/>
+      <p> Accuracy scores of one leading LLM (i.e., PoT GPT-4), four primary LMMs, random chance, and human performance our proposed 
+      <img src="static/images/visonlyqa.png" style="width:1.0em;vertical-align: middle" alt="Logo"/>
+      <span class="visonlyqa">MathVista</span>
+      across mathematical reasoning and visual context types. PoT refers to program-of-thought prompting, and PoT GPT-4 is a textual LLM augmented with the caption and OCR text. GPT-4V is manually evaluated via the playground chatbot.
+      </p>
+    </div>
+  </div>
+</section> -->
+
+
+<section class="section">
+  <div class="container" style="margin-top: -150px; margin-bottom: -100px;">
+    <div class="columns is-centered m-6">
+      <div class="column is-full has-text-centered content">
+        <div class="carousel results-carousel">
+          <div class="box m-5">
+            <div class="content has-text-centered">
+              <img src="static/images/visonlyqa_examples.png" alt="Examples from VisOnlyQA" width="84%"/>
+              <p> Examples from <span class="visonlyqa">VisOnlyQA</span> and answers from LVLMs. <span class="visonlyqa">VisOnlyQA</span> includes 12 tasks for evaluating the capability of LVLMs to perceive basic geometric infomration, such as angle, shape, and size. State-of-the-art LVLMs still often cannot accurately perceive geometric infomration. Questions in this figure are abbreviated.
+              </p>
+            </div>
+          </div>
+          <div class="box m-5">
+            <div class="content has-text-centered">
+              <img src="static/images/visonlyqa_large_examples.png" alt="Examples from VisOnlyQA" width="84%"/>
+              <p> Examples from <span class="visonlyqa">VisOnlyQA</span> and answers from LVLMs. <span class="visonlyqa">VisOnlyQA</span> includes 12 tasks for evaluating the capability of LVLMs to perceive basic geometric infomration, such as angle, shape, and size. State-of-the-art LVLMs still often cannot accurately perceive geometric infomration. Questions in this figure are abbreviated..
+              </p>
+            </div>
+          </div>
+          <div class="box m-5">
+            <div class="content has-text-centered">
+              <img src="static/images/results/accuracy_radar_chart.png" alt="Rader chart for accuracy on LVLMs" width="84%"/>
+              <p>
+                Accuracy scores of LVLMs and human on <span class="visonlyqa">VisOnlyQA</span>. Even state-of-the-art LVLMs, such as GPT-4o and Gemini 1.5 Pro, still struggle with visual perception of geometric information, and their performance is very far from human performance.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</section>
+
+
+<section class="section">
+  <div class="container" style="margin-bottom: 2vh;">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Introduction</h2>
+        <div class="content has-text-justified">
+          <p>
+            Large Vision Language Models (LVLMs) have demonstrated significant advancement across a range of vision-language tasks, including visual math reasoning and academic exams. However, there is a lack of analysis of the capability of LVLMs to perceive visual information in images. Specifically, it remains unclear how accurately LVLMs can perceive <b>geometric information, such as shape, angle, and size</b>, although the perception of these properties is crucial for tasks that require a detailed visual understanding.
+          </p>
+          <p>
+            To bridge this gap, we introduce <span class="visonlyqa">VisOnlyQA</span>, a dataset for evaluating the geometric perception of LVLMs, consisting of 12 tasks that ask about geometric information in geometric shapes, charts, chemical structures, and 3D shapes. Our experiments on <span class="visonlyqa">VisOnlyQA</span> reveal that <b>LVLMs still often cannot accurately perceive basic geometric information in images</b>. 
+          </p>
+          <p>
+            Our experiments highlight the following findings:
+          </p>
+          <ol>
+            <li>
+              Even large LVLMs struggle with perceiving geometric information &mdash; 20 LVLMs we evaluate, including GPT-4o and Gemini 1.5 Pro, work poorly on 
+              <span class="visonlyqa">VisOnlyQA</span>, while human performance is nearly perfect.
+            </li>
+            <li>
+              Additional training data does not fully solve this issue &mdash; fine-tuning on the training set of 
+              <span class="visonlyqa">VisOnlyQA</span> is not always effective, even for in-distribution tasks.
+            </li>
+            <li>
+              Insights for future improvement &mdash; stronger language models improve the capability of LVLMs to perceive geometric information, suggesting that the way LVLMs process information from visual encoders is a bottleneck.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+</div>
+</section>
+
+<!-- DATASET SECTION -->
+<section class="hero is-light is-small">
+  <div class="hero-body has-text-centered">
+    <!-- <h1 class="title is-1 visonlyqa"><img src="static/images/visonlyqa.png" style="width:1.0em;vertical-align: middle" alt="Logo"/>MathVista Dataset</h1> -->
+  <h1 class="title is-1 visonlyqa">
+    <span class="visonlyqa" style="vertical-align: middle">
+      <img src="static/images/visonlyqa_icon.png" style="width:1.15em;vertical-align: middle" alt="Logo"/>
+      VisOnlyQA Dataset
+    </span>
+  </h1>
+  </div>
+</section>
+
+<!-- <section class="section">
+  <div class="container" style="margin-bottom: 2vh;">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Introduction</h2>
+        <div class="content has-text-justified">
+          <p> -->
+            
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered has-text-centered">
+      <!-- <div class="column is-full-width has-text-centered"> -->
+        <div class="column is-four-fifths">
+        <!-- <h2 class="title is-3">Overview</h2> -->
+        <div class="content has-text-justified">
+          <p class="has-text-centered">
+            <a href="#example-responses-on-visonlyqa">More examples are provided below.</a>
+          </p>
+          <p>
+            <span class="visonlyqa">VisOnlyQA</span> includes questions about geometric information in four types of figures: <strong>geometric shapes, chemical structures, charts, and 3D shaes</strong>. They are acquired from two types of sources: <strong>Real</strong> and <strong>Synthetic</strong>.
+          </p>
+          <!-- <p>
+            The <strong>Real</strong> figures are sourced from existing, popular datasets. These are used to evaluate whether LVLMs truly understand real-world visual data. Using authentic images helps ensure the evaluation is grounded in naturally occurring distributions, rather than relying on adversarial or artificially curated content.
+          </p>
+          <p>
+            The <strong>Synthetic</strong> figures are automatically generated through scripts. Their main purpose is to provide large-scale training data to support fine-tuning and controlled analysis of model behavior. For evaluation, they also help eliminate potential biases introduced by human annotations, since both images and questions are synthetically produced.
+          </p> -->
+          
+          <p>
+            <span class="visonlyqa">VisOnlyQA</span> includes the following splits.
+          </p>
+          <p>
+            <ul>
+              <li>
+                <span class="visonlyqa">VisOnlyQA<sub>Eval-Real</sub></span> includes the Real figures, sourced from existing popular datasets and human-annotated questions created by us.
+                <ul>
+                  <li>
+                    <strong>Geometric shapes</strong> from datasets such as MathVista, Geometry3K, GeoQA+, GEOS, and UniGeo.
+                  </li>
+                  <li>
+                    <strong>Chemistry</strong> figures from the MMMU dataset.
+                  </li>
+                  <li>
+                    <strong>Charts</strong> from ChartQA and CharXiv datasets.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <span class="visonlyqa">VisOnlyQA<sub>Eval-Synthetic</sub></span> and <span class="visonlyqa">VisOnlyQA<sub>Train</sub></span> include Synthetic figures and questions, which are automatically generated by our Python scripts.
+                <ul>
+                  <li>
+                    <strong>Geometric shapes</strong> are generated via Python scripts in a new dataset called SyntheticGeometry, based on an open-source AlphaGeometry reproduction.
+                  </li>
+                  <li>
+                    <strong>3D shapes</strong> are sourced from CLEVR and SuperCLEVR datasets.
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="container" style="margin-top: -80px; margin-bottom: -50px;">
+    <div class="columns is-centered m-6">
+      <div class="column is-full has-text-centered content">
+        <div class="box m-5">
+          <div class="content has-text-centered">
+            <img src="static/images/visonlyqa_examples.png" alt="Examples from VisOnlyQA" width="84%"/>
+              <p>
+                Examples from <span class="visonlyqa">VisOnlyQA</span> and answers from LVLMs. <span class="visonlyqa">VisOnlyQA</span> includes 12 tasks for evaluating the capability of LVLMs to perceive basic geometric infomration, such as angle, shape, and size. State-of-the-art LVLMs still often cannot accurately perceive geometric infomration. Questions in this figure are abbreviated.
+              </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full has-text-centered content">
+        <h2 class="title is-3">Dataset Statistics of <span class="visonlyqa">VisOnlyQA</span></h2>
+        <div class="content table-container">
+          <table class="result-table">
+            <caption>
+            </caption>
+            <thead>
+              <tr>
+                <th rowspan="2"></th>
+                <th colspan="6" style="background-color:#dbeeff;">Geometry</th>
+                <th colspan="2" style="background-color:#d7f5d7;">Chemistry</th>
+                <th colspan="2" style="background-color:#ffe4cc;">Charts</th>
+                <th colspan="2" style="background-color:#f0e1ff;">3D</th>
+                <th rowspan="2" valign="middle" style="vertical-align: middle;">Total</th>
+              </tr>
+              <tr>
+                <th style="background-color:#dbeeff;">Triangle</th>
+                <th style="background-color:#dbeeff;">Quadrilateral</th>
+                <th style="background-color:#dbeeff;">Length</th>
+                <th style="background-color:#dbeeff;">Angle</th>
+                <th style="background-color:#dbeeff;">Area</th>
+                <th style="background-color:#dbeeff;">Diameter</th>
+                <th style="background-color:#d7f5d7;">Shape&nbsp;(s)</th>
+                <th style="background-color:#d7f5d7;">Shape&nbsp;(m)</th>
+                <th style="background-color:#ffe4cc;">Extraction</th>
+                <th style="background-color:#ffe4cc;">Intersection</th>
+                <th style="background-color:#f0e1ff;">Size</th>
+                <th style="background-color:#f0e1ff;">Angle</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Eval-Real</td>
+                <td>100</td>
+                <td>100</td>
+                <td>100</td>
+                <td>100</td>
+                <td>100</td>
+                <td>100</td>
+                <td>50</td>
+                <td>50</td>
+                <td>100</td>
+                <td>100</td>
+                <td>--</td>
+                <td>--</td>
+                <td>900</td>
+              </tr>
+              <tr>
+                <td>Eval-Synthetic</td>
+                <td>100</td>
+                <td>100</td>
+                <td>100</td>
+                <td>100</td>
+                <td>100</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>100</td>
+                <td>100</td>
+                <td>700</td>
+              </tr>
+              <tr>
+                <td>Train</td>
+                <td>10k</td>
+                <td>10k</td>
+                <td>10k</td>
+                <td>10k</td>
+                <td>10k</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>--</td>
+                <td>10k</td>
+                <td>10k</td>
+                <td>70k</td>
+              </tr>
+              <tr>
+                <td>Answer&nbsp;Format</td>
+                <td>True/False</td>
+                <td>True/False</td>
+                <td>True/False</td>
+                <td>5&nbsp;options</td>
+                <td>5&nbsp;options</td>
+                <td>5&nbsp;options</td>
+                <td>True/False</td>
+                <td>Select&nbsp;Multiple</td>
+                <td>5&nbsp;options</td>
+                <td>True/False</td>
+                <td>3&nbsp;options</td>
+                <td>5&nbsp;options</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS SECTION -->
+<section class="hero is-light is-small">
+  <div class="hero-body has-text-centered">
+    <h1 class="title is-1 visonlyqa">Experiments</h1>
+  </div>
+</section>
+
+<script>
+  function showExample(exampleId) {
+    const allExamples = document.querySelectorAll('.example-box');
+    allExamples.forEach(el => el.style.display = 'none');
+
+    const target = document.getElementById(exampleId);
+    if (target) {
+      target.style.display = 'block';
+    }
+  }
+</script>
+
+<section class="section">
+  <div class="container">
+    <!-- Examples -->
+    <div class="columns is-centered m-6" id="example-responses-on-visonlyqa">
+      <div class="column is-full has-text-centered content">
+        <h2 class="title is-3">Example Responses from LVLMs for <span class="visonlyqa">VisOnlyQA<sub>Eval-Real</sub></span></h2>
+
+        <div class="buttons is-centered mb-5">
+          <a class="button is-light" onclick="showExample('example-geometry-triangle')">Geometry-Triangle</a>
+          <a class="button is-light" onclick="showExample('example-geometry-quadrilateral')">Geometry-Quadrilateral</a>
+          <a class="button is-light" onclick="showExample('example-geometry-length')">Geometry-Length</a>
+          <a class="button is-light" onclick="showExample('example-geometry-angle')">Geometry-Angle</a>
+          <a class="button is-light" onclick="showExample('example-geometry-area')">Geometry-Area</a>
+          <a class="button is-light" onclick="showExample('example-geometry-diameter')">Geometry-Diameter</a>
+          <a class="button is-light" onclick="showExample('example-chemistry-shape-single')">Chemistry-Shape (single)</a>
+          <a class="button is-light" onclick="showExample('example-chemistry-shape-multi')">Chemistry-Shape (multiple)</a>
+          <a class="button is-light" onclick="showExample('example-charts-extraction')">Charts-Extraction</a>
+          <a class="button is-light" onclick="showExample('example-charts-intersection')">Charts-Intersection</a>
+        </div>
+            
+          <div class="example-box box m-5" id="example-geometry-triangle">
+            <h4 class="title is-5">Geometry-Triangle (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image">
+                  <img src="static/images/examples/909.jpg" alt="example-triangle-figure" style="width: 50%;">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>
+                  There is a triangle DBC in the figure. True or False?<br>
+                  A triangle is a polygon with three edges and three vertices, which are explicitly connected in the figure.</p>
+                <p class="mt-2"><strong>Gold Answer:</strong> False</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">In the figure, there is a triangle labeled \( \triangle ABC \). The line segment \( DE \) is parallel to \( BC \) and divides \( \triangle ABC \) into two smaller triangles, \( \triangle ADE \) and \( \triangle BDE \). However, there is no triangle labeled \( \triangle DBC \) in the figure. <br><br><strong>Final answer:</strong> False.</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                  <td class="has-text-justified is-vcentered">False.</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">The figure shows points D, B, and C connected by line segments DB, BC, and CD. These three segments and the points D, B, and C form a triangle. <br><br><strong>Final Answer:</strong> True</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">True</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="example-box box m-5" style="display: none;" id="example-geometry-quadrilateral">
+            <h4 class="title is-5">Geometry-Quadrilateral (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image">
+                  <img src="static/images/examples/916.jpg" alt="example-quadrilateral-figure" style="width: 50%;">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>
+                  There is no quadrilateral CBPQ in this figure. True or False?<br>
+                  A quadrilateral is a four-sided polygon having four edges (sides) and four corners (vertices).</p>
+                <p class="mt-2"><strong>Gold Answer:</strong> True</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">In the figure, points C, B, P, and Q are not all connected to form a closed shape with four sides. A quadrilateral requires four connected edges forming a closed loop. Here, the points do not form such a shape. <br><br><strong>Final answer:</strong> True.</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                  <td class="has-text-justified is-vcentered">True</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">The statement is <strong>False</strong>.<br><br>The points C, B, P, and Q are connected by line segments CB, BP, PQ, and QC, forming a closed four-sided figure. This meets the definition of a quadrilateral. It doesn't matter that some of the lines forming it happen to also be part of other shapes (triangle and circle). <br><br><strong>Final Answer:</strong> False</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">False</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="example-box box m-5" style="display: none;" id="example-geometry-length">
+            <h4 class="title is-5">Geometry-Length (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image">
+                  <img src="static/images/examples/30.jpg" alt="example-length-figure" style="width: 50%;">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>
+                  Line CE is X times longer than AD. Which of the following options is a reasonable estimate of X? You only need to estimate from the visual information and do not need to do any mathematical reasoning.<br>
+                  (a) 0.5 (b) 1 (c) 2 (d) 4 (e) 0.25
+                </p>
+                <p class="mt-2"><strong>Gold Answer:</strong> a</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">From the image, line \( CE \) appears to be about twice as long as line \( AD \). Visually estimating, \( CE \) is significantly longer than \( AD \), but not excessively so.<br><br><strong>The final answer:</strong> (c) 2.</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">c</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">CE looks to be roughly the same length as AD. Therefore, X is approximately 1.<br><br><strong>Final Answer:</strong> (b)</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">(a)</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="example-box box m-5" style="display: none;" id="example-geometry-angle">
+            <h4 class="title is-5">Geometry-Angle (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image">
+                  <img src="static/images/examples/62.jpg" alt="example-angle-figure" style="width: 50%;">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>
+                  Which of the following options is a reasonable estimate of the angle AOD in the figure? You only need to estimate from the visual information and do not need to do any mathematical reasoning.<br>
+                  (a) 180 degrees (b) 10 degrees (c) 135 degrees (d) 90 degrees (e) 45 degrees
+                </p>
+                <p class="mt-2"><strong>Gold Answer:</strong> d</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">From the visual information in the figure, angle \( \angle AOD \) appears to be an acute angle, significantly less than 90 degrees. It looks closer to a small angle, possibly around 45 degrees.<br><br>Therefore, the reasonable estimate for angle \( \angle AOD \) is: (e) 45 degrees</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">e</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">The angle AOD appears to be close to a right angle. A right angle measures 90 degrees.<br><br><strong>Final Answer:</strong> (d)</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                  <td class="has-text-justified is-vcentered">c</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="example-box box m-5" style="display: none;" id="example-geometry-area">
+            <h4 class="title is-5">Geometry-Area (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image">
+                  <img src="static/images/examples/485.jpg" alt="example-area-figure" style="width: 50%;">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>
+                  ADB is X times larger in area than ABC. Which of the following options is a reasonable estimate?<br>
+                  You only need to estimate from the visual information and do not need to do any mathematical reasoning.<br>
+                  (a) 0.5 (b) 0.25 (c) 1 (d) 4 (e) 2
+                </p>
+                <p class="mt-2"><strong>Gold Answer:</strong> (c)</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">From the visual information, triangle \( \triangle ADB \) appears to be larger than triangle \( \triangle ABC \). The base \( DB \) is longer than \( EC \), and the height from \( A \) to \( DB \) is the same as to \( EC \). This suggests \( \triangle ADB \) is significantly larger than \( \triangle ABC \).<br><br><strong>Final answer:</strong> (e) 2</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">e</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">ADB appears roughly twice as large as ABC. This is because ADB encompasses most of the area within triangle ADC, which itself is roughly the same area as triangle ABC. Therefore, ADB is approximately 2 times larger than ABC.<br><br><strong>Final Answer:</strong> (e)</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">e</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="example-box box m-5" style="display: none;" id="example-geometry-diameter">
+            <h4 class="title is-5">Geometry-Diameter (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image">
+                  <img src="static/images/examples/35.jpg" alt="example-diameter-figure" style="width: 50%;">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>In the figure, the line AB is a diameter of a circle. True or False?</p>
+                <p class="mt-2"><strong>Gold Answer:</strong> True</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">In the figure, \( AB \) is a chord of the circle, and \( E \) is a point on the circle such that \( \triangle AEB \) is inscribed. For \( AB \) to be a diameter, the angle \( \angle AEB \) must be a right angle (90 degrees) according to the inscribed angle theorem. However, the figure does not provide enough information to confirm that \( \angle AEB \) is a right angle.<br><br><strong>Final answer:</strong> False.</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">True.</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">A diameter of a circle is a line segment that passes through the center of the circle and whose endpoints lie on the circle. In this figure, AB passes through point O (the circle's center) and points A and B lie on the circle.<br><br><strong>Final Answer:</strong> True</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                  <td class="has-text-justified is-vcentered">True</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="example-box box m-5" style="display: none;" id="example-chemistry-shape-single">
+            <h4 class="title is-5">Chemistry-Shape-Single (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image" style="width: 50%;">
+                  <img src="static/images/examples/test_Chemistry_390.png" alt="example-chemistry-structure">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>H and O are attached to opposite vertices of the hexagonal structure. True or False? You must answer this question using visual information and do not use knowledge of chemistry unless explicitly instructed to do so.</p>
+                <p class="mt-2"><strong>Gold Answer:</strong> False</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">In the image, the hexagonal structure represents a cyclohexane ring. The oxygen (O) is attached to one vertex of the hexagon, and the hydrogen (H) is attached to a different vertex. However, they are not on opposite vertices of the hexagon.<br><br><strong>Final answer:</strong> False.</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                  <td class="has-text-justified is-vcentered">False</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">The Oxygen (O) is attached to a vertex of the hexagon. The Hydrogen (H) is attached to a point along the edge of the hexagon below the Oxygen and adjacent to the isopropyl group (the two CH3's attached to a central carbon). Therefore, they are not at opposite vertices.<br><br><strong>Final Answer:</strong> False.</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                  <td class="has-text-justified is-vcentered">False</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="example-box box m-5" style="display: none;" id="example-chemistry-shape-multi">
+            <h4 class="title is-5">Chemistry-Shape-Multi (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image" style="width: 80%;">
+                  <img src="static/images/examples/test_Chemistry_19.png" alt="example-chemistry-multi">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>List all figures that satisfy the following conditions from a, b, c, and d. You must answer this question using visual information and do not need to use your knowledge of chemistry unless explicitly instructed to do so.</p>
+                <p><strong>Conditions:</strong> Including a pentagonal structure.</p>
+                <p class="mt-2"><strong>Gold Answer:</strong> a,d</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">All the figures (a, b, c, and d) include a pentagonal structure. Each structure has a five-membered ring, which is a pentagon.<br><br><strong>Final answer:</strong> a, b, c, d.</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">a, b, c, d</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">The figures (a), (b), (c), and (d) all depict pentagonal structures as part of their molecular diagrams.<br><br><strong>Final Answer:</strong> a, b, c, d</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">a, b, c, d</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="example-box box m-5" style="display: none;" id="example-charts-extraction">
+            <h4 class="title is-5">Charts-Extraction (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image" style="width: 80%;">
+                  <img src="static/images/examples/arXiv_src_2302_084--2302--2302.11423--calibration.jpg" alt="example-chart-figure">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>Answer the following question about the chart in the figure. Select the most reasonable answer from the provided options.</p>
+                <p>Stock Index of Dow Jones on 28 Jan is<br>(a) 200 (b) 350 (c) 250 (d) 0.08 (e) 3000</p>
+                <p class="mt-2"><strong>Gold Answer:</strong> a</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">The chart for the Dow Jones is located in the middle row on the left side. On January 28, the stock index value is approximately 350.<br><br><strong>Final answer:</strong> (b) 350</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">(c) 250</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">The question asks for the Stock Index of Dow Jones on 28 Jan. The Dow Jones plot is the third row, left side. We look for 28 Jan on the x-axis of this plot. The corresponding value on the y-axis is approximately 200.<br><br><strong>Final Answer:</strong> a</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                  <td class="has-text-justified is-vcentered">a</td>
+                  <td class="has-text-justified is-vcentered">✅</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="example-box box m-5" style="display: none;" id="example-charts-intersection">
+            <h4 class="title is-5">Charts-Intersection (Eval-Real)</h4>
+            <div class="columns is-vcentered">
+              <div class="column is-5 has-text-centered">
+                <figure class="image" style="width: 60%;">
+                  <img src="static/images/examples/12051.png" alt="example-intersection-figure">
+                </figure>
+              </div>
+              <div class="column has-text-justified">
+                <p><strong>Question:</strong></p>
+                <p>In the figure, the lines for India and the Taliban intersect between 2012 and 2014. True or False?</p>
+                <p class="mt-2"><strong>Gold Answer:</strong> False</p>
+              </div>
+            </div>
+            <h4 class="title is-5">Model Responses</h4>
+            <table class="table is-fullwidth is-bordered is-striped">
+              <thead>
+                <tr>
+                  <th class="has-text-justified is-vcentered">Model</th>
+                  <th class="has-text-justified is-vcentered">Answer w/ CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                  <th class="has-text-justified is-vcentered">Answer w/o CoT</th>
+                  <th class="has-text-justified is-vcentered"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>GPT-4o</strong></td>
+                  <td class="has-text-justified is-vcentered">The lines for India and the Taliban intersect between 2012 and 2014. In 2013, the percentage for India is 38, and for the Taliban, it is 33. In 2014, the percentage for India is 51, and for the Taliban, it is 25. This indicates that the lines intersected between these years.<br><br><strong>Final answer:</strong> True.</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">True</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+                <tr>
+                  <td class="has-text-justified is-vcentered"><strong>Gemini 1.5 Pro</strong></td>
+                  <td class="has-text-justified is-vcentered">The lines for India and the Taliban intersect between the years 2012 and 2013, which is within the range of 2012 and 2014.<br><br><strong>Final Answer:</strong> True</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                  <td class="has-text-justified is-vcentered">True</td>
+                  <td class="has-text-justified is-vcentered">❌</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+      </div>
+    </div>
+
+    <!-- Results of Existing LVLMs on VisOnlyQA -->
+    <div class="columns is-centered m-6">
+      <div class="column is-full has-text-centered content">
+        <h2 class="title is-3">Results of Existing LVLMs on <span class="visonlyqa">VisOnlyQA</span></h2>
+
+        <div class="content has-text-justified">
+          <p>
+            We evaluate 20 LVLMs, including GPT-4o and Gemini 1.5 Pro, on <span class="visonlyqa">VisOnlyQA</span>. Our results show that even state-of-the-art LVLMs still often cannot accurately perceive basic geometric information in images.
+          </p>
+          <p class="has-text-centered">
+            <a href="#result-tables">Full results are provided at the end of this page.</a>
+          </p>
+        </div>
+        
+        <div class="box m-5">
+          <div class="content has-text-centered">
+            <img src="static/images/results/accuracy_radar_chart.png" alt="rader-chart-of-lvlm-performance-on-visonlyqa" width="60%"/>
+            <p>
+              Accuracy scores of LVLMs and human on <span class="visonlyqa">VisOnlyQA</span>. Even state-of-the-art LVLMs, such as GPT-4o and Gemini 1.5 Pro, still struggle with visual perception of geometric information, and their performance is very far from human performance.
+            </p>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+
+    <!-- fine-tuned -->
+    <div class="columns is-centered m-6">
+      <div class="column is-full has-text-centered content">
+        <h2 class="title is-3">Results of LVLMs fine-tuned on the Training Set of <span class="visonlyqa">VisOnlyQA</span></h2>
+  
+        <div class="content has-text-justified">
+          <p>
+            We evaluate LVLMs fine-tuned on the training set of <span class="visonlyqa">VisOnlyQA</span>.
+          </p>
+          <p>
+            <strong>Positive results:</strong>
+            All models achieve near-perfect performance in <code>3D-Size</code> after fine-tuning, and models larger than 7B show large improvement even on the out-of-distribution figures in <code>Geometry-Length</code> and <code>Area</code>. This result partially supports our hypothesis that training data for existing LVLMs are insufficient and indicates that our approach of using synthetic training data has the potential to improve the capability of LVLMs to perceive geometric information.
+          </p>
+        
+          <p class="mt-3">
+            <strong>Negative results:</strong>
+            However, fine-tuned models are still often much worse than human performance, even on in-distribution figures. Specifically, fine-tuning almost does not improve performance in <code>3D-Angle</code>, and we observe relatively small improvements on <code>Geometry-Triangle</code>, <code>Quadrilateral</code>, and <code>Angle</code>, even on in-distribution figures. This result indicates that fine-tuning on datasets that require accurate perception of geometric information is not always effective, depending on the properties of target tasks.
+          </p>
+        </div>
+        
+        <div class="box m-5">
+          <div class="content has-text-centered">
+            <img src="static/images/results/finetuned_accuracy_synthetic.png" alt="finetuned_accuracy_synthetic" width="100%"/>
+            <img src="static/images/results/finetuned_accuracy_real.png" alt="finetuned_accuracy_reaul" width="100%"/>
+            <p>
+              Accuracy scores of LVLMs fine-tuned on the training set of <span class="visonlyqa">VisOnlyQA</span>.
+            </p>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+      
+    <!-- llm -->
+    <div class="columns is-centered m-6">
+      <div class="column is-full has-text-centered content">
+        <h2 class="title is-3">LLMs of LVLMs Influence Their Geometric Perception</h2>
+  
+        <div class="content has-text-justified">
+          <p>
+            InternVL2 4B and 8B and Qwen2-VL 2B and 7B use the same vision transformers (ViT) as visual encoders while using different language models, respectively. We expected the visual encoders to play a major role in geometric perception, and models using the same ViT to perform similarly on <span class="visonlyqa">VisOnlyQA</span>, particularly after fine-tuning — since fine-tuning would help models understand tasks, further reducing the impact of the reasoning capability of language models.
+          </p>
+        
+          <p>
+            However, there are performance gaps between LVLMs with the same ViT and different language models, and the gaps become larger after fine-tuning. This observation indicates that language models of LVLMs affect the capability to perceive geometric information, and the influence of LLMs of LVLMs is not limited to reasoning or knowledge.
+          </p>
+        
+          <p>
+            This result suggests that language models play a crucial role in processing visual information encoded by ViT, and strong language models are needed even for tasks that do not require challenging reasoning or knowledge.
+          </p>
+        </div>
+        
+        <div class="content has-text-centered table-container">
+          <p class="mt-3">
+            Larger language models improve the performance of LVLMs on <span class="visonlyqa">VisOnlyQA<sub>Eval</sub></span> when using the same visual encoders.
+          </p>
+        
+          <table class="result-table">
+            <thead>
+              <tr>
+                <th rowspan="2" style="vertical-align: middle;">Model</th>
+                <th rowspan="2" style="vertical-align: middle;">ViT</th>
+                <th rowspan="2" style="vertical-align: middle;">LLM</th>
+                <th colspan="2" style="background-color: #dbeeff;">Original</th>
+                <th colspan="2" style="background-color: #d7f5d7;">Fine-tuned</th>
+              </tr>
+              <tr>
+                <th style="background-color: #dbeeff;">Real</th>
+                <th style="background-color: #dbeeff;">Synthetic</th>
+                <th style="background-color: #d7f5d7;">Real</th>
+                <th style="background-color: #d7f5d7;">Synthetic</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>InternVL2-4B</td>
+                <td style="color: violet;">304M</td>
+                <td>3.8B</td>
+                <td>38.4</td>
+                <td>34.1</td>
+                <td>46.0</td>
+                <td>57.7</td>
+              </tr>
+              <tr>
+                <td>InternVL2-8B</td>
+                <td style="color: violet;">304M</td>
+                <td>7.7B</td>
+                <td>40.7</td>
+                <td>35.0</td>
+                <td>52.4</td>
+                <td>64.6</td>
+              </tr>
+              <tr>
+                <td>Qwen2-VL-2B</td>
+                <td style="color: orange;">675M</td>
+                <td>1.5B</td>
+                <td>32.3</td>
+                <td>33.6</td>
+                <td>43.8</td>
+                <td>54.6</td>
+              </tr>
+              <tr>
+                <td>Qwen2-VL-7B</td>
+                <td style="color: orange;">675M</td>
+                <td>7.6B</td>
+                <td>38.9</td>
+                <td>37.1</td>
+                <td>48.2</td>
+                <td>65.0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+                
+      </div>
+    </div>
+
+  </div>
+
+  <!-- llm -->
+  <div class="container" id="result-tables">
+    
+    <div class="columns is-centered">
+      <div class="column is-full has-text-centered content">
+        <h2 class="title is-3" id="leaderboard">Full Performance Tables of Existing LVLMs on VisOnlyQA</h2>
+        <div class="content table-container">
+          <p class="mt-3">Accuracy scores on the <b>Eval-Real</b> subset (900 examples in total) of <span class="visonlyqa">VisOnlyQA</span>.
+          </p>
+
+          <table class="js-sort-table result-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Triangle</th>
+                <th>Quadrilateral</th>
+                <th>Diameter</th>
+                <th>Length</th>
+                <th>Angle</th>
+                <th>Area</th>
+                <th>Shape (s)</th>
+                <th>Shape (m)</th>
+                <th>Extraction</th>
+                <th>Intersection</th>
+                <th><u>Average</u></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Random</td><td>50.0</td><td>50.0</td><td>20.0</td><td>20.0</td><td>20.0</td><td>50.0</td><td>50.0</td><td>6.2</td><td>20.0</td><td>50.0</td><td>34.2</td></tr>
+              <tr><td>Phi-3.5-vision</td><td>48.0</td><td>50.0</td><td>17.0</td><td>17.0</td><td>27.0</td><td>50.0</td><td>54.0</td><td>10.0</td><td>29.0</td><td>50.0</td><td>35.6</td></tr>
+              <tr><td>LLaVA-Next 8B</td><td>50.0</td><td>50.0</td><td>16.0</td><td>15.0</td><td>26.0</td><td>49.0</td><td>42.0</td><td>4.0</td><td>22.0</td><td>49.0</td><td>33.3</td></tr>
+              <tr><td>LLaVA-Next 34B</td><td>49.0</td><td>50.0</td><td>30.0</td><td>15.0</td><td>22.0</td><td>44.0</td><td>34.0</td><td>10.0</td><td>35.0</td><td>50.0</td><td>35.2</td></tr>
+              <tr><td>Llama 3.2 11B</td><td>50.0</td><td>47.0</td><td>17.0</td><td>15.0</td><td>26.0</td><td>43.0</td><td>34.0</td><td>8.0</td><td>32.0</td><td>50.0</td><td>33.4</td></tr>
+              <tr><td>Llama 3.2 90B</td><td>51.0</td><td>46.0</td><td>14.0</td><td>28.0</td><td>27.0</td><td>48.0</td><td>60.0</td><td>20.0</td><td>35.0</td><td>45.0</td><td>37.1</td></tr>
+              <tr><td>MolMo 7B-D</td><td>49.0</td><td>45.0</td><td>20.0</td><td>11.0</td><td>23.0</td><td>56.0</td><td>40.0</td><td>12.0</td><td>31.0</td><td>48.0</td><td>34.3</td></tr>
+              <tr><td>MolMo 72B</td><td>44.0</td><td>47.0</td><td>22.0</td><td>25.0</td><td>33.0</td><td>50.0</td><td>48.0</td><td>30.0</td><td>46.0</td><td>52.0</td><td>39.8</td></tr>
+              <tr><td>Qwen2-VL-2B</td><td>43.0</td><td>44.0</td><td>15.0</td><td>19.0</td><td>26.0</td><td>47.0</td><td>38.0</td><td>12.0</td><td>27.0</td><td>45.0</td><td>32.3</td></tr>
+              <tr><td>Qwen2-VL-7B</td><td>50.0</td><td>50.0</td><td>23.0</td><td>19.0</td><td>34.0</td><td>46.0</td><td>46.0</td><td>16.0</td><td>45.0</td><td>52.0</td><td>38.9</td></tr>
+              <tr><td>Qwen2-VL-72B</td><td>44.0</td><td>52.0</td><td>27.0</td><td>27.0</td><td>37.0</td><td>61.0</td><td>56.0</td><td>36.0</td><td>53.0</td><td>53.0</td><td>44.4</td></tr>
+              <tr><td>InternVL2-4B</td><td>50.0</td><td>56.0</td><td>30.0</td><td>17.0</td><td>18.0</td><td>49.0</td><td>54.0</td><td>16.0</td><td>38.0</td><td>53.0</td><td>38.4</td></tr>
+              <tr><td>InternVL2-8B</td><td>44.0</td><td>36.0</td><td>29.0</td><td>30.0</td><td>27.0</td><td>56.0</td><td>50.0</td><td>22.0</td><td>52.0</td><td>56.0</td><td>40.7</td></tr>
+              <tr><td>InternVL2-26B</td><td>44.0</td><td>47.0</td><td>24.0</td><td>22.0</td><td>26.0</td><td>55.0</td><td>58.0</td><td>28.0</td><td>47.0</td><td>46.0</td><td>39.3</td></tr>
+              <tr><td>InternVL2-40B</td><td>43.0</td><td>45.0</td><td>32.0</td><td>23.0</td><td>31.0</td><td>57.0</td><td>28.0</td><td>30.0</td><td>61.0</td><td>58.0</td><td>42.1</td></tr>
+              <tr><td>InternVL2-76B</td><td>44.0</td><td>42.0</td><td>28.0</td><td>34.0</td><td>45.0</td><td>56.0</td><td>60.0</td><td>36.0</td><td>63.0</td><td>54.0</td><td>46.0</td></tr>
+              <tr><td>Claude 3.5 Sonnet</td><td>50.0</td><td>47.0</td><td>23.0</td><td>20.0</td><td>33.0</td><td>59.0</td><td>52.0</td><td>40.0</td><td>61.0</td><td>52.0</td><td>43.4</td></tr>
+              <tr><td>GPT-4o-mini</td><td>45.0</td><td>66.0</td><td>26.0</td><td>19.0</td><td>30.0</td><td>58.0</td><td>58.0</td><td>32.0</td><td>40.0</td><td>53.0</td><td>42.4</td></tr>
+              <tr><td>GPT-4o</td><td>58.0</td><td>48.0</td><td>27.0</td><td>34.0</td><td>38.0</td><td>69.0</td><td>72.0</td><td>50.0</td><td>46.0</td><td>58.0</td><td>48.8</td></tr>
+              <tr><td>Gemini 1.5 Flash</td><td>47.0</td><td>51.0</td><td>25.0</td><td>24.0</td><td>39.0</td><td>60.0</td><td>68.0</td><td>42.0</td><td>58.0</td><td>58.0</td><td>49.2</td></tr>
+              <tr><td>Gemini 1.5 Pro</td><td>47.0</td><td>53.0</td><td>33.0</td><td>40.0</td><td>53.0</td><td>70.0</td><td>62.0</td><td>52.0</td><td>67.0</td><td>53.0</td><td>52.6</td></tr>
+              <tr><td><strong>Human</strong></td><td>96.7</td><td>90.0</td><td>93.3</td><td>93.3</td><td>86.7</td><td>100.0</td><td>93.3</td><td>93.0</td><td>93.3</td><td>95.0</td><td>93.5</td></tr>
+            </tbody>
+          </table>
+          
+        </div>
+
+        <div class="content table-container">
+          <p class="mt-3">
+            Accuracy scores on the <b>Eval-Synthetic</b> subset (700 examples in total) of <span class="visonlyqa">VisOnlyQA</span>.
+          </p>
+
+          <table class="js-sort-table result-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Triangle</th>
+                <th>Quadrilateral</th>
+                <th>Length</th>
+                <th>Angle</th>
+                <th>Area</th>
+                <th>Size</th>
+                <th>Angle (3D)</th>
+                <th><u>Average</u></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Random</td><td>50.0</td><td>50.0</td><td>20.0</td><td>20.0</td><td>20.0</td><td>33.3</td><td>20.0</td><td>30.5</td></tr>
+              <tr><td>Phi-3.5-vision</td><td>54.0</td><td>55.0</td><td>15.0</td><td>22.0</td><td>21.0</td><td>39.0</td><td>20.0</td><td>32.3</td></tr>
+              <tr><td>LLaVA-Next 8B</td><td>50.0</td><td>50.0</td><td>17.0</td><td>21.0</td><td>19.0</td><td>26.0</td><td>19.0</td><td>28.9</td></tr>
+              <tr><td>LLaVA-Next 34B</td><td>51.0</td><td>50.0</td><td>25.0</td><td>24.0</td><td>20.0</td><td>48.0</td><td>32.0</td><td>35.7</td></tr>
+              <tr><td>Llama 3.2 11B</td><td>54.0</td><td>52.0</td><td>31.0</td><td>21.0</td><td>21.0</td><td>32.0</td><td>21.0</td><td>33.1</td></tr>
+              <tr><td>Llama 3.2 90B</td><td>61.0</td><td>56.0</td><td>12.0</td><td>16.0</td><td>20.0</td><td>45.0</td><td>26.0</td><td>33.7</td></tr>
+              <tr><td>MolMo 7B-D</td><td>49.0</td><td>56.0</td><td>22.0</td><td>20.0</td><td>14.0</td><td>29.0</td><td>27.0</td><td>31.0</td></tr>
+              <tr><td>MolMo 72B</td><td>51.0</td><td>55.0</td><td>23.0</td><td>22.0</td><td>18.0</td><td>50.0</td><td>27.0</td><td>35.1</td></tr>
+              <tr><td>Qwen2-VL-2B</td><td>50.0</td><td>50.0</td><td>31.0</td><td>23.0</td><td>20.0</td><td>38.0</td><td>23.0</td><td>33.6</td></tr>
+              <tr><td>Qwen2-VL-7B</td><td>58.0</td><td>59.0</td><td>24.0</td><td>18.0</td><td>22.0</td><td>58.0</td><td>21.0</td><td>37.1</td></tr>
+              <tr><td>Qwen2-VL-72B</td><td>51.0</td><td>56.0</td><td>33.0</td><td>21.0</td><td>26.0</td><td>76.0</td><td>27.0</td><td>41.4</td></tr>
+              <tr><td>InternVL2-4B</td><td>50.0</td><td>51.0</td><td>21.0</td><td>24.0</td><td>18.0</td><td>57.0</td><td>18.0</td><td>34.1</td></tr>
+              <tr><td>InternVL2-8B</td><td>51.0</td><td>57.0</td><td>21.0</td><td>17.0</td><td>23.0</td><td>46.0</td><td>30.0</td><td>35.0</td></tr>
+              <tr><td>InternVL2-26B</td><td>51.0</td><td>53.0</td><td>30.0</td><td>23.0</td><td>21.0</td><td>72.0</td><td>25.0</td><td>39.3</td></tr>
+              <tr><td>InternVL2-40B</td><td>51.0</td><td>54.0</td><td>30.0</td><td>23.0</td><td>21.0</td><td>69.0</td><td>25.0</td><td>39.0</td></tr>
+              <tr><td>InternVL2-76B</td><td>52.0</td><td>51.0</td><td>29.0</td><td>18.0</td><td>22.0</td><td>84.0</td><td>27.0</td><td>40.4</td></tr>
+              <tr><td>Claude 3.5 Sonnet</td><td>61.0</td><td>63.0</td><td>33.0</td><td>20.0</td><td>34.0</td><td>62.0</td><td>22.0</td><td>42.1</td></tr>
+              <tr><td>GPT-4o-mini</td><td>60.0</td><td>51.0</td><td>21.0</td><td>20.0</td><td>18.0</td><td>27.0</td><td>23.0</td><td>31.4</td></tr>
+              <tr><td>GPT-4o</td><td>66.0</td><td>56.0</td><td>25.0</td><td>17.0</td><td>26.0</td><td>60.0</td><td>23.0</td><td>39.0</td></tr>
+              <tr><td>Gemini 1.5 Flash</td><td>54.0</td><td>51.0</td><td>29.0</td><td>21.0</td><td>19.0</td><td>60.0</td><td>21.0</td><td>36.4</td></tr>
+              <tr><td>Gemini 1.5 Pro</td><td>54.0</td><td>57.0</td><td>34.0</td><td>21.0</td><td>40.0</td><td>69.0</td><td>22.0</td><td>42.4</td></tr>
+              <tr><td><strong>Human</strong></td><td>95.0</td><td>95.0</td><td>95.0</td><td>90.0</td><td>95.0</td><td>100.0</td><td>95.0</td><td><strong>95.0</strong></td></tr>
+            </tbody>
+          </table>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title is-3 has-text-centered">BibTeX</h2>
+
+    <div class="box">
+      <pre><code id="bibtex-entry">@article{kamoi2024visonlyqa,
+  author = {Ryo Kamoi and Yusen Zhang and Sarkar Snigdha Sarathi Das and Ranran Haoran Zhang and Rui Zhang},
+  journal = {arXiv preprint arXiv:2412.00947},
+  title = {VisOnlyQA: Large Vision Language Models Still Struggle with Visual Perception of Geometric Information},
+  year = {2024}
+}</code></pre>
+      <div class="has-text-centered">
+        <button class="button is-small is-link" onclick="copyBibtex()">Copy BibTeX</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function copyBibtex() {
+    const bibtex = document.getElementById("bibtex-entry").innerText;
+    navigator.clipboard.writeText(bibtex);
+  }
+</script>
+
+<section>
+  <div class="section" id="org-banners" style="display:flex">
+    <a href="https://nlp.psu.edu/" target="_blank" rel="external">
+        <img class="center-block org-banner" src="static/images/banners/pennstate.png">
+    </a>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <!-- <div class="container"> -->
+    <div class="content has-text-centered">
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is website adapted from <a href="https://nerfies.github.io/">Nerfies</a> and <a href="https://visonlyqa.github.io/">MathVista</a>, licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  <!-- </div> -->
+</footer>
+
+</body>
+</html>
